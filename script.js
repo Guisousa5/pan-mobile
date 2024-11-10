@@ -9,15 +9,20 @@ const setVoiceButton = document.getElementById('setVoiceButton');
 const voiceSelect = document.getElementById('voiceSelect');
 let isSoundOn = true;
 
-// Verifica se o navegador suporta a API de síntese de fala e reconhecimento de voz
+// Verifica se o navegador suporta a API de síntese de fala
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
+let synth = null;  // Variável para a síntese de fala
 if ('speechSynthesis' in window) {
-  const synth = window.speechSynthesis;
+  synth = window.speechSynthesis;
 
-  // Carrega as vozes disponíveis
-  synth.onvoiceschanged = () => {
+  // Carrega as vozes disponíveis com atraso para garantir que o carregamento ocorra corretamente
+  function loadVoices() {
     const voices = synth.getVoices();
+    if (voices.length === 0) {
+      setTimeout(loadVoices, 100); // Tenta carregar novamente se as vozes ainda não estiverem disponíveis
+      return;
+    }
 
     // Adiciona as vozes ao menu suspenso
     voices.forEach(voice => {
@@ -38,11 +43,15 @@ if ('speechSynthesis' in window) {
         voiceSelect.appendChild(option);
       }
     });
-  };
+  }
+
+  // Carrega as vozes
+  synth.onvoiceschanged = loadVoices;
+  loadVoices(); // Chama a função imediatamente para garantir o carregamento
 
   // Função para falar o texto
   function speak(text) {
-    if (!isSoundOn) return; // Não fala se o som estiver desativado
+    if (!isSoundOn || !synth) return; // Não fala se o som estiver desativado ou síntese não estiver disponível
 
     const utterance = new SpeechSynthesisUtterance(text);
     const selectedVoice = voiceSelect.value;
@@ -54,7 +63,11 @@ if ('speechSynthesis' in window) {
       utterance.voice = voice;
     }
 
-    synth.speak(utterance);
+    try {
+      synth.speak(utterance);
+    } catch (error) {
+      console.error("Erro ao tentar falar:", error);
+    }
   }
 
   // Botão para definir a voz
@@ -99,7 +112,7 @@ soundToggleButton.addEventListener('click', () => {
 
   // Interromper fala em andamento se o som estiver sendo desligado
   if (!isSoundOn) {
-    speechSynthesis.cancel();
+    synth.cancel();
   }
 
   // Alterar ícone conforme o status do som
@@ -179,7 +192,6 @@ function sendMessage() {
   }
 }
 
-
 // Envio de mensagem ao pressionar a tecla Enter
 userInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {
@@ -194,7 +206,6 @@ sendButton.addEventListener('click', sendMessage);
 clearChatButton.addEventListener('click', () => {
   chatBox.innerHTML = ''; // Limpa todo o conteúdo do chat
 });
-
 document.getElementById('feedbackButton').addEventListener('click', async () => {
     const feedbackText = document.getElementById('feedbackText').value;
     const feedbackMessage = document.getElementById('feedbackMessage');
