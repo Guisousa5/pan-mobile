@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat Assistente</title>
+  <title>Assistente Panamá</title> 
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css">
 </head>
@@ -29,26 +29,31 @@
       <button id="feedbackButton">Enviar Feedback</button>
       <p id="feedbackMessage"></p>
     </div>
-<!-- VLibras Widget -->
-<!-- VLibras Widget -->
-<div vw class="enabled">
-  <div vw-access-button class="active"></div>
-  <div vw-plugin-wrapper>
-    <div class="vw-plugin-top-wrapper"></div>
-  </div>
-</div>
 
-<script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-<script>
-  new window.VLibras.Widget('https://vlibras.gov.br/app');
-</script>
+    <!-- VLibras Widget -->
+    <div vw class="enabled">
+      <div vw-access-button class="active"></div>
+      <div vw-plugin-wrapper>
+        <div class="vw-plugin-top-wrapper"></div>
+      </div>
+    </div>
+
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+      new window.VLibras.Widget('https://vlibras.gov.br/app');
+    </script>
+
     <div class="controls">
       <select id="voiceSelect" style="display: none;"></select>
       <button id="setVoiceButton">Escolher Voz</button>
       <button id="soundToggleButton"><i class="bi bi-volume-up-fill"></i></button>
       <button id="clearChatButton">Limpar Chat</button>
     </div>
+    <sub style="display: block;">
+      <p>Desenvolvido por Guilherme Sousa e Leonardo Araujo - 3º ano I</p>
+    </sub>
   </div>
+
 
   <script src="script.js"></script>
 </body>
