@@ -10,11 +10,9 @@ const voiceSelect = document.getElementById('voiceSelect');
 let isSoundOn = true;
 
 // Verifica se o navegador suporta a API de síntese de fala
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
 let synth = window.speechSynthesis;
 
-// Carrega as vozes disponíveis
+// Carrega todas as vozes disponíveis no navegador
 function loadVoices() {
     const voices = synth.getVoices();
     if (voices.length === 0) {
@@ -22,36 +20,19 @@ function loadVoices() {
         return;
     }
 
-    voices.forEach(voice => {
-        if (["Microsoft EmmaMultilingual Online (Natural) - English (United States)",
-             "Microsoft Antonio Online (Natural) - Portuguese (Brazil)",
-             "Microsoft Daniel - Portuguese (Brazil)",
-             "Microsoft Maria - Portuguese (Brazil)"].includes(voice.name)) {
+    voiceSelect.innerHTML = ''; // Limpa as opções anteriores
 
+    voices.forEach(voice => {
+        if (voice.lang.startsWith('pt')) { // Filtra por idioma 'pt' (português)
             const option = document.createElement('option');
             option.value = voice.voiceURI;
-            option.textContent = getVoiceDisplayName(voice.name);
+            option.textContent = `${voice.name} (${voice.lang})`;
             voiceSelect.appendChild(option);
         }
     });
 }
 
-function getVoiceDisplayName(voiceName) {
-    switch (voiceName) {
-        case "Microsoft EmmaMultilingual Online (Natural) - English (United States)":
-            return "Feminina (Humanizada)";
-        case "Microsoft Antonio Online (Natural) - Portuguese (Brazil)":
-            return "Masculina (Humanizada)";
-        case "Microsoft Daniel - Portuguese (Brazil)":
-            return "Masculina";
-        case "Microsoft Maria - Portuguese (Brazil)":
-            return "Feminina";
-        default:
-            return voiceName;
-    }
-}
-
-// Carrega as vozes
+// Carrega as vozes quando elas estiverem disponíveis
 synth.onvoiceschanged = loadVoices;
 loadVoices();
 
@@ -68,34 +49,10 @@ function speak(text) {
     synth.speak(utterance);
 }
 
-// Botão para definir a voz
+// Botão para exibir/ocultar a seleção de vozes
 setVoiceButton.addEventListener('click', () => {
     voiceSelect.style.display = voiceSelect.style.display === 'none' ? 'block' : 'none';
 });
-
-// Verificação de suporte ao reconhecimento de voz
-if (SpeechRecognition) {
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
-
-    micButton.addEventListener('click', () => recognition.start());
-
-    recognition.onresult = (event) => {
-        const voiceText = event.results[0][0].transcript;
-        displayMessage(voiceText, 'user');
-        getAssistantResponse(voiceText);
-    };
-
-    recognition.onerror = (event) => {
-        console.error("Erro no reconhecimento de voz: ", event.error);
-        alert(ERROR_MESSAGES.recognition);
-    };
-} else {
-    console.warn("API de reconhecimento de voz não é suportada neste navegador.");
-    micButton.addEventListener('click', () => {
-        alert("O reconhecimento de voz não é suportado neste navegador. Por favor, use o Google Chrome.");
-    });
-}
 
 // Botão de alternância de som
 soundToggleButton.addEventListener('click', () => {
@@ -105,7 +62,6 @@ soundToggleButton.addEventListener('click', () => {
         ? '<i class="bi bi-volume-up-fill"></i>'
         : '<i class="bi bi-volume-mute-fill"></i>';
 });
-
 // Função para exibir mensagens no chat
 function displayMessage(message, type) {
     const messageDiv = document.createElement('div');
