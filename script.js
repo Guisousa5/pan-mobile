@@ -12,191 +12,184 @@ let isSoundOn = true;
 // Verifica se o navegador suporta a API de síntese de fala
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-let synth = null;  // Variável para a síntese de fala
-if ('speechSynthesis' in window) {
-  synth = window.speechSynthesis;
+let synth = window.speechSynthesis;
 
-  // Carrega as vozes disponíveis com atraso para garantir que o carregamento ocorra corretamente
-  function loadVoices() {
+// Carrega as vozes disponíveis
+function loadVoices() {
     const voices = synth.getVoices();
     if (voices.length === 0) {
-      setTimeout(loadVoices, 100); // Tenta carregar novamente se as vozes ainda não estiverem disponíveis
-      return;
+        setTimeout(loadVoices, 100);
+        return;
     }
 
-    // Adiciona as vozes ao menu suspenso
     voices.forEach(voice => {
-      if (voice.name === "Microsoft EmmaMultilingual Online (Natural) - English (United States)" ||
-          voice.name === "Microsoft Antonio Online (Natural) - Portuguese (Brazil)" ||
-          voice.name === "Microsoft Daniel - Portuguese (Brazil)" ||
-          voice.name === "Microsoft Maria - Portuguese (Brazil)") {
+        if (["Microsoft EmmaMultilingual Online (Natural) - English (United States)",
+             "Microsoft Antonio Online (Natural) - Portuguese (Brazil)",
+             "Microsoft Daniel - Portuguese (Brazil)",
+             "Microsoft Maria - Portuguese (Brazil)"].includes(voice.name)) {
 
-        const option = document.createElement('option');
-        option.value = voice.voiceURI; // Usar voiceURI como valor
-
-        // Alterar o nome mostrado no select
-        option.textContent = voice.name === "Microsoft EmmaMultilingual Online (Natural) - English (United States)" ? "Feminina (Humanizada)" :
-                             voice.name === "Microsoft Antonio Online (Natural) - Portuguese (Brazil)" ? "Masculina (Humanizada)" :
-                             voice.name === "Microsoft Daniel - Portuguese (Brazil)" ? "Masculina" :
-                             "Feminina";
-
-        voiceSelect.appendChild(option);
-      }
+            const option = document.createElement('option');
+            option.value = voice.voiceURI;
+            option.textContent = getVoiceDisplayName(voice.name);
+            voiceSelect.appendChild(option);
+        }
     });
-  }
+}
 
-  // Carrega as vozes
-  synth.onvoiceschanged = loadVoices;
-  loadVoices(); // Chama a função imediatamente para garantir o carregamento
+function getVoiceDisplayName(voiceName) {
+    switch (voiceName) {
+        case "Microsoft EmmaMultilingual Online (Natural) - English (United States)":
+            return "Feminina (Humanizada)";
+        case "Microsoft Antonio Online (Natural) - Portuguese (Brazil)":
+            return "Masculina (Humanizada)";
+        case "Microsoft Daniel - Portuguese (Brazil)":
+            return "Masculina";
+        case "Microsoft Maria - Portuguese (Brazil)":
+            return "Feminina";
+        default:
+            return voiceName;
+    }
+}
 
-  // Função para falar o texto
-  function speak(text) {
-    if (!isSoundOn || !synth) return; // Não fala se o som estiver desativado ou síntese não estiver disponível
+// Carrega as vozes
+synth.onvoiceschanged = loadVoices;
+loadVoices();
+
+// Função para falar o texto
+function speak(text) {
+    if (!isSoundOn || !synth) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
     const selectedVoice = voiceSelect.value;
-
-    // Seleciona a voz desejada usando voiceURI
     const voices = synth.getVoices();
     const voice = voices.find(v => v.voiceURI === selectedVoice);
-    if (voice) {
-      utterance.voice = voice;
-    }
+    if (voice) utterance.voice = voice;
 
-    try {
-      synth.speak(utterance);
-    } catch (error) {
-      console.error("Erro ao tentar falar:", error);
-    }
-  }
-
-  // Botão para definir a voz
-  setVoiceButton.addEventListener('click', () => {
-    voiceSelect.style.display = voiceSelect.style.display === 'none' ? 'block' : 'none';
-  });
-} else {
-  alert('Desculpe, seu navegador não suporta a API de síntese de fala.');
+    synth.speak(utterance);
 }
+
+// Botão para definir a voz
+setVoiceButton.addEventListener('click', () => {
+    voiceSelect.style.display = voiceSelect.style.display === 'none' ? 'block' : 'none';
+});
 
 // Verificação de suporte ao reconhecimento de voz
 if (SpeechRecognition) {
-  // API de reconhecimento de voz
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'pt-BR'; // Definir o idioma para Português
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
 
-  // Evento de clique no botão de microfone
-  micButton.addEventListener('click', () => {
-    recognition.start(); // Iniciar reconhecimento de voz
-  });
+    micButton.addEventListener('click', () => recognition.start());
 
-  recognition.onresult = (event) => {
-    const voiceText = event.results[0][0].transcript; // Extrair o texto da fala reconhecida
-    displayMessage(voiceText, 'user'); // Exibir a mensagem do usuário
-    getAssistantResponse(voiceText); // Obter a resposta do assistente
-  };
+    recognition.onresult = (event) => {
+        const voiceText = event.results[0][0].transcript;
+        displayMessage(voiceText, 'user');
+        getAssistantResponse(voiceText);
+    };
 
-  recognition.onerror = (event) => {
-    console.error("Erro no reconhecimento de voz: ", event.error);
-    alert("Houve um erro com o reconhecimento de voz. Por favor, tente novamente.");
-  };
+    recognition.onerror = (event) => {
+        console.error("Erro no reconhecimento de voz: ", event.error);
+        alert(ERROR_MESSAGES.recognition);
+    };
 } else {
-  console.warn("API de reconhecimento de voz não é suportada neste navegador.");
-  micButton.addEventListener('click', () => {
-    alert("O reconhecimento de voz não é suportado neste navegador. Por favor, use o Google Chrome.");
-  });
+    console.warn("API de reconhecimento de voz não é suportada neste navegador.");
+    micButton.addEventListener('click', () => {
+        alert("O reconhecimento de voz não é suportado neste navegador. Por favor, use o Google Chrome.");
+    });
 }
 
 // Botão de alternância de som
 soundToggleButton.addEventListener('click', () => {
-  isSoundOn = !isSoundOn;
-
-  // Interromper fala em andamento se o som estiver sendo desligado
-  if (!isSoundOn) {
-    synth.cancel();
-  }
-
-  // Alterar ícone conforme o status do som
-  soundToggleButton.innerHTML = isSoundOn
-      ? '<i class="bi bi-volume-up-fill"></i>'
-      : '<i class="bi bi-volume-mute-fill"></i>';
+    isSoundOn = !isSoundOn;
+    if (!isSoundOn) synth.cancel();
+    soundToggleButton.innerHTML = isSoundOn
+        ? '<i class="bi bi-volume-up-fill"></i>'
+        : '<i class="bi bi-volume-mute-fill"></i>';
 });
 
 // Função para exibir mensagens no chat
 function displayMessage(message, type) {
-  const messageDiv = document.createElement('div');
-  messageDiv.classList.add(type === 'user' ? 'user-message' : 'assistant-message');
-  messageDiv.textContent = message;
-  chatBox.appendChild(messageDiv);
-  chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll para a última mensagem
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add(type === 'user' ? 'user-message' : 'assistant-message');
+    messageDiv.textContent = message;
+    chatBox.appendChild(messageDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+    messages.push({ message, type });
+    localStorage.setItem('chatMessages', JSON.stringify(messages));
 }
+
+function loadMessages() {
+    const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+    messages.forEach(({ message, type }) => {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add(type === 'user' ? 'user-message' : 'assistant-message');
+        messageDiv.textContent = message;
+        chatBox.appendChild(messageDiv);
+    });
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Chame a função loadMessages quando a página for carregada
+document.addEventListener('DOMContentLoaded', loadMessages);
 
 // Função para obter a resposta do assistente via API
 async function getAssistantResponse(message) {
-  const loadingMessage = "Estou processando sua pergunta...";
-  displayMessage(loadingMessage, 'assistant'); // Exibe a mensagem de carregamento
+    const loadingMessage = "...";
+    displayMessage(loadingMessage, 'assistant');
 
-  try {
-    console.log("Enviando mensagem:", message);
+    try {
+        const response = await fetch('https://panapi-production.up.railway.app/answer-user/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: message }),
+        });
 
-    // Atualize para a URL de produção
-    const response = await fetch('https://panapi-production.up.railway.app/answer-user/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ text: message }), // Enviando a mensagem como JSON
-    });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || "Erro ao obter resposta do assistente");
+        }
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || "Erro ao obter resposta do assistente");
+        const data = await response.json();
+        const rawResponse = data.raw || "Resposta não encontrada";
+
+        const assistantMessages = document.querySelectorAll('.assistant-message');
+        if (assistantMessages.length > 0) {
+            assistantMessages[assistantMessages.length - 1].remove();
+        }
+
+        displayMessage(rawResponse, 'assistant');
+        speak(rawResponse);
+
+    } catch (error) {
+        console.error("Erro ao processar a resposta do assistente:", error);
+        const errorMessage = "Desculpe, ocorreu um erro ao obter a resposta: " + error.message;
+
+        const assistantMessages = document.querySelectorAll('.assistant-message');
+        if (assistantMessages.length > 0) {
+            assistantMessages[assistantMessages.length - 1].remove();
+        }
+
+        displayMessage(errorMessage, 'assistant');
+        speak(errorMessage);
     }
-
-    const data = await response.json();
-    console.log("Estrutura de dados recebidos:", data); // Exibir estrutura dos dados
-
-    // Acessar a resposta bruta a partir do campo 'raw'
-    const rawResponse = data.raw || "Resposta não encontrada"; // Se 'raw' não existir
-
-    // Remover a mensagem de carregamento
-    const assistantMessages = document.querySelectorAll('.assistant-message');
-    if (assistantMessages.length > 0) {
-      assistantMessages[assistantMessages.length - 1].remove(); // Remove a última mensagem de carregamento
-    }
-
-    displayMessage(rawResponse, 'assistant'); // Exibir a resposta no chat
-    speak(rawResponse); // Falar a resposta caso o som esteja ativado
-
-  } catch (error) {
-    console.error("Erro ao processar a resposta do assistente:", error);
-    const errorMessage = "Desculpe, ocorreu um erro ao obter a resposta: " + error.message;
-
-    // Remover a mensagem de carregamento em caso de erro
-    const assistantMessages = document.querySelectorAll('.assistant-message');
-    if (assistantMessages.length > 0) {
-      assistantMessages[assistantMessages.length - 1].remove(); // Remove a última mensagem de carregamento
-    }
-
-    displayMessage(errorMessage, 'assistant'); // Exibir mensagem de erro
-    speak(errorMessage); // Falar o erro caso o som esteja ativado
-  }
 }
 
 // Função para processar o envio da mensagem
 function sendMessage() {
-  const userText = userInput.value.trim(); // Remove espaços em branco desnecessários
-  if (userText) { // Verifica se o campo não está vazio
-    displayMessage(userText, 'user'); // Exibir a mensagem do usuário
-    getAssistantResponse(userText);   // Obter a resposta do assistente
-    userInput.value = ''; // Limpa o campo de entrada
-  }
+    const userText = userInput.value.trim();
+    if (userText) {
+        displayMessage(userText, 'user');
+        getAssistantResponse(userText);
+        userInput.value = '';
+    }
 }
 
 // Envio de mensagem ao pressionar a tecla Enter
 userInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    sendMessage();
-  }
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
 });
 
 // Envio de mensagem ao clicar no botão de enviar
@@ -204,76 +197,78 @@ sendButton.addEventListener('click', sendMessage);
 
 // Função para limpar o chat
 clearChatButton.addEventListener('click', () => {
-  chatBox.innerHTML = ''; // Limpa todo o conteúdo do chat
+    const userConfirmed = confirm("Tem certeza de que deseja limpar o chat?");
+    if (userConfirmed) {
+        clearChat();
+    }
 });
+
+function clearChat() {
+    chatBox.innerHTML = ''; // Limpa o conteúdo do chat
+    localStorage.removeItem('chatMessages'); // Remove as mensagens do armazenamento local
+}
+
+// Feedback do usuário
 document.getElementById('feedbackButton').addEventListener('click', async () => {
-    const feedbackText = document.getElementById('feedbackText').value;
+    const feedbackText = document.getElementById('feedbackText').value.trim();
     const feedbackMessage = document.getElementById('feedbackMessage');
-    const feedbackId = crypto.randomUUID(); // Gera um UUID para o feedback
+
+    if (!feedbackText || feedbackText.length < 5) {
+        showFeedbackMessage("Por favor, insira pelo menos 5 caracteres de feedback antes de enviar.", 'red');
+        return;
+    }
+
+    const feedbackId = crypto.randomUUID();
 
     try {
         const response = await fetch("https://panapi-production.up.railway.app/save_feedback", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                content: feedbackText,
-                feedback_id: feedbackId
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: feedbackText, feedback_id: feedbackId })
         });
 
         if (response.ok) {
-            feedbackMessage.style.display = 'block';
-            feedbackMessage.textContent = "Feedback salvo com sucesso!";
-            feedbackMessage.style.color = 'green';
+            showFeedbackMessage("Feedback salvo com sucesso!", 'green');
         } else {
-            feedbackMessage.style.display = 'block';
-            feedbackMessage.textContent = "Erro ao salvar feedback.";
-            feedbackMessage.style.color = 'red';
+            showFeedbackMessage("Muito obrigado pelo seu feedback! Suas sugestões são essenciais para melhorarmos continuamente o Pan. Agradecemos sua colaboração e estamos sempre trabalhando para tornar o assistente cada vez mais útil para você", 'green');
         }
     } catch (error) {
-        feedbackMessage.style.display = 'block';
-        feedbackMessage.textContent = "Erro ao enviar feedback: " + error.message;
-        feedbackMessage.style.color = 'red';
+        showFeedbackMessage("Erro ao enviar feedback: " + error.message, 'red');
     }
 
-    // Mensagem de agradecimento
-    feedbackMessage.style.display = 'block';
-    feedbackMessage.textContent = "Obrigado pela sua sugestão! Sua opinião é muito importante para nós e nos ajuda a melhorar constantemente. Agradecemos pelo seu tempo e feedback!";
-    feedbackMessage.style.color = 'blue';
-
-    // Limpa o campo de texto
     document.getElementById('feedbackText').value = '';
-
-    // Esconde a mensagem de agradecimento após 5 segundos
-    setTimeout(function() {
+    setTimeout(() => {
         feedbackMessage.style.display = 'none';
-    }, 5000); // 5000ms = 5 segundos
+    }, 5000);
 });
+
 // Alternar tema
 document.addEventListener('DOMContentLoaded', () => {
-  const toggleThemeButton = document.getElementById('toggleThemeButton');
+    const toggleThemeButton = document.getElementById('toggleThemeButton');
 
-  toggleThemeButton.addEventListener('click', () => {
-    // Alterna a classe do body entre 'dark-mode' e 'light-mode'
-    document.body.classList.toggle('dark-mode');
+    toggleThemeButton.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const elementsToToggle = [
+            '.chat-container',
+            '.header',
+            '.chat-box',
+            '.input-section',
+            '.feedback-container',
+            ...document.querySelectorAll('.user-message, .assistant-message')
+        ];
 
-    // Obtém todos os elementos relevantes e alterna suas classes
-    const elementsToToggle = [
-      '.chat-container',
-      '.header',
-      '.chat-box',
-      '.input-section',
-      '.feedback-container',
-      ...document.querySelectorAll('.user-message, .assistant-message')
-    ];
-
-    elementsToToggle.forEach(selector => {
-      const element = document.querySelector(selector);
-      if (element) {
-        element.classList.toggle('dark-mode');
-      }
+        elementsToToggle.forEach(selector => {
+            const element = document.querySelector(selector);
+            if (element) {
+                element.classList.toggle('dark-mode');
+            }
+        });
     });
-  });
 });
+
+function showFeedbackMessage(message, color) {
+    const feedbackMessage = document.getElementById('feedbackMessage');
+    feedbackMessage.style.display = 'block';
+    feedbackMessage.textContent = message;
+    feedbackMessage.style.color = color;
+}
