@@ -15,6 +15,7 @@ let synth = window.speechSynthesis;
 // Carrega todas as vozes disponíveis no navegador
 function loadVoices() {
     const voices = synth.getVoices();
+    console.log(voices);  // Verifique as vozes carregadas
     if (voices.length === 0) {
         setTimeout(loadVoices, 100);
         return;
@@ -40,11 +41,15 @@ loadVoices();
 function speak(text) {
     if (!isSoundOn || !synth) return;
 
+    synth.cancel(); // Cancela qualquer fala anterior antes de iniciar a nova
     const utterance = new SpeechSynthesisUtterance(text);
     const selectedVoice = voiceSelect.value;
     const voices = synth.getVoices();
     const voice = voices.find(v => v.voiceURI === selectedVoice);
-    if (voice) utterance.voice = voice;
+
+    if (voice) {
+        utterance.voice = voice;
+    }
 
     synth.speak(utterance);
 }
